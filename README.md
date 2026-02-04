@@ -24,9 +24,6 @@ Real-time fall detection using YOLOv11
 ## Installation
 
 ```bash
-# Clone or navigate to the project
-cd V1
-
 # Install dependencies
 pip install -r requirements.txt
 
