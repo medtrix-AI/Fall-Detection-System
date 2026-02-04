@@ -1,0 +1,16 @@
+# Fall Detection System V2 - Dependencies
+
+# Core ML
+ultralytics>=8.0.0
+huggingface_hub>=0.17.0
+torch>=2.0.0
+
+# Computer Vision
+opencv-python>=4.5.0
+numpy>=1.21.0
+
+# Configuration
+pyyaml>=6.0
+
+# Optional: GPU acceleration (uncomment for CUDA support)
+# torch with CUDA: pip install torch torchvision --index-url https://download.pytorch.org/whl/cu118

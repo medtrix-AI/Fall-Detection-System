@@ -1,0 +1,38 @@
+model:
+  repo_id: "melihuzunoglu/human-fall-detection"
+  filename: "best.pt"
+  input_size: 640
+  confidence_threshold: 0.5
+  iou_threshold: 0.45
+  device: "auto"
+
+video:
+  source: "webcam"
+  camera_index: 0
+  video_path: null
+  width: 640
+  height: 480
+  fps_target: 30
+
+detection:
+  candidate_validation_sec: 0.3
+  confirm_duration_sec: 1.5
+  cooldown_duration_sec: 15.0
+  fall_confidence_threshold: 0.6
+  min_consecutive_detections: 3
+  detection_window_sec: 2.0
+
+alert:
+  enable_sound: true
+  enable_popup: true
+  alert_cooldown_sec: 30.0
+  max_alerts_per_minute: 2
+
+output:
+  display: true
+  save_clips: true
+  clip_pre_seconds: 5.0
+  clip_post_seconds: 5.0
+  output_dir: "runs"
+
+log_level: "INFO"
