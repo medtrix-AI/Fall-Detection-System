@@ -1,6 +1,6 @@
 # Fall Detection System V2
 
-Real-time fall detection using YOLOv11 from Hugging Face.
+Real-time fall detection using YOLOv11
 
 ## Features
 
