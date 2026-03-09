@@ -137,6 +137,38 @@ def parse_args() -> argparse.Namespace:
         help="Disable visual popup alerts"
     )
 
+    # Backend integration
+    backend_group = parser.add_argument_group("Backend Integration")
+    backend_group.add_argument(
+        "--backend-url",
+        type=str,
+        default=None,
+        help="Medtrix backend base URL (e.g., http://localhost:8000)"
+    )
+    backend_group.add_argument(
+        "--api-key",
+        type=str,
+        default=None,
+        help="Edge device API key for backend auth"
+    )
+    backend_group.add_argument(
+        "--device-id",
+        type=str,
+        default=None,
+        help="Edge device UUID registered in backend"
+    )
+    backend_group.add_argument(
+        "--location",
+        type=str,
+        default=None,
+        help="Room/location identifier (e.g., bedroom, living_room)"
+    )
+    backend_group.add_argument(
+        "--no-backend",
+        action="store_true",
+        help="Disable backend integration even if configured in YAML"
+    )
+
     # Other
     parser.add_argument(
         "--log-level",
@@ -148,7 +180,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--device",
         type=str,
-        choices=["auto", "cuda", "cpu"],
+        choices=["auto", "cuda", "mps", "cpu"],
         default="auto",
         help="Compute device"
     )
@@ -191,6 +223,17 @@ def build_config(args: argparse.Namespace) -> AppConfig:
     config.alert.enable_popup = not args.no_popup
 
     config.log_level = args.log_level
+
+    # Backend integration
+    if args.no_backend:
+        config.backend.enabled = False
+    elif args.backend_url and args.api_key and args.device_id:
+        config.backend.enabled = True
+        config.backend.base_url = args.backend_url
+        config.backend.api_key = args.api_key
+        config.backend.device_id = args.device_id
+        if args.location:
+            config.backend.location = args.location
 
     return config
 

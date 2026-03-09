@@ -14,7 +14,7 @@ class ModelConfig:
     input_size: int = 640
     confidence_threshold: float = 0.5
     iou_threshold: float = 0.45
-    device: str = "auto"  # "auto", "cuda", "cpu"
+    device: str = "auto"  # "auto", "cuda", "mps", "cpu"
 
 
 @dataclass
@@ -63,6 +63,21 @@ class OutputConfig:
 
 
 @dataclass
+class BackendConfig:
+    """Backend integration configuration."""
+    enabled: bool = False
+    base_url: str = "http://localhost:8000"
+    api_key: str = ""
+    device_id: str = ""
+    location: str = ""
+    heartbeat_interval_sec: int = 300
+    timeout_sec: float = 10.0
+    max_retries: int = 3
+    upload_clips: bool = True
+    delete_clips_after_upload: bool = False
+
+
+@dataclass
 class AppConfig:
     """Main application configuration."""
     model: ModelConfig = field(default_factory=ModelConfig)
@@ -70,6 +85,7 @@ class AppConfig:
     detection: DetectionConfig = field(default_factory=DetectionConfig)
     alert: AlertConfig = field(default_factory=AlertConfig)
     output: OutputConfig = field(default_factory=OutputConfig)
+    backend: BackendConfig = field(default_factory=BackendConfig)
     log_level: str = "INFO"
 
     @classmethod
@@ -84,6 +100,7 @@ class AppConfig:
             detection=DetectionConfig(**data.get("detection", {})),
             alert=AlertConfig(**data.get("alert", {})),
             output=OutputConfig(**data.get("output", {})),
+            backend=BackendConfig(**data.get("backend", {})),
             log_level=data.get("log_level", "INFO"),
         )
 
@@ -116,6 +133,14 @@ class AppConfig:
                 "display": self.output.display,
                 "save_clips": self.output.save_clips,
                 "output_dir": self.output.output_dir,
+            },
+            "backend": {
+                "enabled": self.backend.enabled,
+                "base_url": self.backend.base_url,
+                "device_id": self.backend.device_id,
+                "location": self.backend.location,
+                "heartbeat_interval_sec": self.backend.heartbeat_interval_sec,
+                "upload_clips": self.backend.upload_clips,
             },
             "log_level": self.log_level,
         }

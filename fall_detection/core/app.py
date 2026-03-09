@@ -21,6 +21,10 @@ from ..alerts.visual import VisualAlertHandler
 from ..logging_.event_logger import EventLogger
 from ..visualization.renderer import VisualizationRenderer
 from ..utils.fps_counter import FPSCounter
+from ..network.client import BackendClient
+from ..network.backend_handler import BackendAlertHandler
+from ..network.heartbeat import HeartbeatService
+from ..network.clip_uploader import ClipUploader
 
 logger = logging.getLogger(__name__)
 
@@ -56,6 +60,12 @@ class FallDetectionApp:
         self._renderer: Optional[VisualizationRenderer] = None
         self._recorder: Optional[ClipRecorder] = None
         self._fps_counter: Optional[FPSCounter] = None
+
+        # Backend network components
+        self._backend_client: Optional[BackendClient] = None
+        self._backend_handler: Optional[BackendAlertHandler] = None
+        self._heartbeat: Optional[HeartbeatService] = None
+        self._clip_uploader: Optional[ClipUploader] = None
 
         # Display state
         self._show_alert_overlay = False
@@ -119,6 +129,42 @@ class FallDetectionApp:
             self._alert_manager.register_handler(SoundAlertHandler(self.config.alert))
             self._alert_manager.register_handler(VisualAlertHandler(self.config.alert))
             self._alert_manager.start()
+
+            # Backend integration
+            if self.config.backend.enabled:
+                self._backend_client = BackendClient(
+                    base_url=self.config.backend.base_url,
+                    api_key=self.config.backend.api_key,
+                    device_id=self.config.backend.device_id,
+                    spool_dir=self._run_dir,
+                    timeout=self.config.backend.timeout_sec,
+                    max_retries=self.config.backend.max_retries,
+                )
+                self._backend_handler = BackendAlertHandler(
+                    client=self._backend_client,
+                    location=self.config.backend.location or None,
+                )
+                self._alert_manager.register_handler(self._backend_handler)
+
+                self._heartbeat = HeartbeatService(
+                    client=self._backend_client,
+                    interval_sec=self.config.backend.heartbeat_interval_sec,
+                )
+                self._heartbeat.start()
+
+                if self.config.backend.upload_clips and self.config.output.save_clips:
+                    clips_dir = self._run_dir / "clips"
+                    self._clip_uploader = ClipUploader(
+                        client=self._backend_client,
+                        clips_dir=clips_dir,
+                        delete_after_upload=self.config.backend.delete_clips_after_upload,
+                    )
+                    self._clip_uploader.start()
+
+                print(f"  Backend: {self.config.backend.base_url}")
+            else:
+                print("  Backend: disabled")
+
             print(f"  Alert handlers: {self._alert_manager.handler_count}")
 
             # Event logger
@@ -173,6 +219,21 @@ class FallDetectionApp:
             # Trigger alert
             if self._alert_manager:
                 self._alert_manager.trigger_alert(event)
+
+            # Pass event_id to clip uploader once backend handler has it
+            if self._backend_handler and self._clip_uploader:
+                import threading as _threading
+
+                def _set_clip_event_id():
+                    """Wait briefly for backend_handler to receive event_id, then pass to clip_uploader."""
+                    for _ in range(20):  # up to 10 seconds
+                        eid = self._backend_handler.last_event_id
+                        if eid:
+                            self._clip_uploader.set_event_id(eid)
+                            return
+                        time.sleep(0.5)
+
+                _threading.Thread(target=_set_clip_event_id, daemon=True).start()
 
             # Show overlay
             self._show_alert_overlay = True
@@ -263,6 +324,14 @@ class FallDetectionApp:
         """Cleanup resources."""
         logger.info("Cleaning up...")
         print("\nShutting down...")
+
+        # Stop network components first (before alert manager)
+        if self._clip_uploader:
+            self._clip_uploader.stop()
+        if self._heartbeat:
+            self._heartbeat.stop()
+        if self._backend_client:
+            self._backend_client.close()
 
         # Stop alert manager
         if self._alert_manager:

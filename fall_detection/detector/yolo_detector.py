@@ -67,7 +67,12 @@ class YOLOFallDetector(BaseDetector):
                     logger.info("CUDA available, using GPU")
                     return "cuda"
                 else:
-                    logger.info("CUDA not available, using CPU")
+                    if torch.backends.mps.is_available():
+                        logger.info(
+                            "MPS available but skipped due to known YOLO "
+                            "bounding box bugs. Use --device mps to force it."
+                        )
+                    logger.info("Using CPU")
                     return "cpu"
             except ImportError:
                 return "cpu"

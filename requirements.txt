@@ -12,5 +12,8 @@ numpy>=1.21.0
 # Configuration
 pyyaml>=6.0
 
+# Network (backend integration)
+requests>=2.28.0
+
 # Optional: GPU acceleration (uncomment for CUDA support)
 # torch with CUDA: pip install torch torchvision --index-url https://download.pytorch.org/whl/cu118

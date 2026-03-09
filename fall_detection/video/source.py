@@ -139,6 +139,27 @@ class VideoSource:
 
         return True, frame
 
+    def read_latest(self) -> Tuple[bool, Optional[Frame]]:
+        """Read the most recent frame, discarding stale buffered frames."""
+        if not self._cap:
+            return False, None
+
+        ret, data = self._cap.read()
+
+        if not ret or data is None:
+            return False, None
+
+        self._frame_count += 1
+        frame = Frame(
+            data=data,
+            timestamp=time.time(),
+            frame_id=self._frame_count,
+            width=data.shape[1],
+            height=data.shape[0],
+            source_fps=self._source_fps
+        )
+        return True, frame
+
     def frames(self) -> Generator[Frame, None, None]:
         """Generator yielding frames."""
         while True:

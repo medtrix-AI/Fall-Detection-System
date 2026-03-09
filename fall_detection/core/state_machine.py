@@ -246,11 +246,16 @@ class FallStateMachine:
 
         time_confirming = timestamp - self._confirm_start
 
-        # Check for recovery (multiple consecutive non-fall frames)
+        # Check for recovery (truly consecutive non-fall frames from the tail)
         if not has_fall:
-            recent_entries = list(self._detection_history)[-5:]
-            consecutive_no_fall = sum(1 for e in recent_entries if not e.has_fall)
-            if consecutive_no_fall >= 3:
+            recent_entries = list(self._detection_history)
+            consecutive_no_fall = 0
+            for entry in reversed(recent_entries):
+                if not entry.has_fall:
+                    consecutive_no_fall += 1
+                else:
+                    break
+            if consecutive_no_fall >= 5:
                 self._confirm_start = None
                 self._current_detection = None
                 return self._transition_to(FallState.NORMAL, "Recovery during confirmation")
